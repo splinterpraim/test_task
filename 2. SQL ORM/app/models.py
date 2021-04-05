@@ -3,7 +3,10 @@ from app import db
 class Room(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
 	name = db.Column(db.Text)
-
+	racks = db.relationship('Rack',backref='room')
+	customer = db.relationship('Customer',
+                    secondary='rack',
+                    backref="rooms")
 	def __repr__(self):
 		return f'Room {self.id}'
 
@@ -22,6 +25,7 @@ class Rack(db.Model):
 class Customer(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
 	name = db.Column(db.Text)
+	racks = db.relationship('Rack',backref='cust')
 
 	def __repr__(self):
 		return f'Customer {self.id}'

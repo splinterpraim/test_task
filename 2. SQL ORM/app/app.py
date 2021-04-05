@@ -16,6 +16,13 @@ import models
 def index():
 	return "Hello world"
 
+
+@app.route('/a')
+def a():
+
+	rooms =  models.Room.query.all()
+	print(rooms[0].racks)
+	return "Good"
 @app.route('/all')
 def all():
 	
@@ -66,42 +73,35 @@ def query_rack_all():
 	return ("Rack",racks_json)
 
 def query_racks_occupied():
-	
-	racks = db.session.query(models.Rack,models.Room,models.Customer). \
-		select_from(models.Rack). \
-		join(models.Room).join(models.Customer).filter(models.Rack.state=="occupied").all()
-
+	racks = models.Rack.query.filter(models.Rack.state == 'occupied').all()
 	racks_json = []
-	for ra, r, c in racks:
-		racks_json.append({"id" : ra.id,"rack_name":ra.name,"customer_name":c.name,"room name":r.name})
+	for ra in racks:
+		racks_json.append({"id" : ra.id,"rack_name":ra.name,"customer_name":ra.cust.name,"room name":ra.room.name})
 	return racks_json
 
 def query_rooms_array_id():
-	rooms = models.Room.query.all()
-	customers = models.Customer.query.all()
+	racks = models.Rack.query.filter(models.Rack.state == 'occupied').all()
 	rooms_json = []
-	for r in rooms:
-		
-		racks = db.session.query(models.Rack,models.Room,models.Customer). \
-		select_from(models.Rack). \
-		join(models.Room).join(models.Customer).filter( models.Rack.state=="occupied").all()
-		
-		rooms_json.append({'id': r.id,'id_customers': list(set([c.id for ra,roo,c in racks if r.id==roo.id]))})
+	for ra in racks:
+		r = ra.room
+		rooms_json.append({'id': r.id,'id_customers': [c.id for c in r.customer]})
+
+	racks = models.Room.query.join(models.Rack,Room.id,Rack.room_id).
+
+
+	# rooms = db.session.query(models.Room).all()
+	# rooms_json = []
+	# for r in rooms:
+	# 	rooms_json.append({'id': r.id,'id_customers': list(set([x.customer for x in r.racks]))})
 	return rooms_json
 
 def query_rooms_max_rack():
-	rooms = models.Room.query.all()
-	
+	rooms = db.session.query(models.Room.id, models.Rack.id, db.func.max(models.Rack.size)). \
+			outerjoin(models.Rack, models.Room.id == models.Rack.room_id).group_by(models.Room.id).all()
+
 	racks_json = []
-	for r in rooms:
-		racks = db.session.query(models.Rack,models.Room). \
-		join(models.Room).filter(models.Room.id==r.id).order_by(models.Rack.size.desc()).all()
-		
-		if len(racks)<1:
-			racks_json.append({'id_room': r.id,'id_rack': None, 'size':None})
-		else:
-			ra,_  = racks[0]
-			racks_json.append({'id_room': r.id,'id_rack': ra.id, 'size':ra.size})
+	for ro,ra, ra_size in rooms:
+		racks_json.append({'id_room': ro,'id_rack': ra, 'size':ra_size})
 	return racks_json
 
 
